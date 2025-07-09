@@ -9,8 +9,9 @@ app.use(cors());
 app.use(express.json());
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
+const { default: Stripe } = require("stripe");
 const uri = process.env.MONGO_DB_URL;
-
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -29,6 +30,7 @@ async function run() {
 
     const db = client.db("foodDonationDb");
     const userCollation = db.collection("users");
+    const paymentsCollection = db.collection("payments")
 
     // user collation api =================================
 
@@ -52,7 +54,41 @@ async function run() {
 
 
 
+    // payment intent =================
 
+    app.post("/create-payment-intent", async (req, res) => {
+      const { amount } = req.body;
+      console.log(amount);
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount, // amount in cents: $10 = 1000
+          currency:'usd',
+          payment_method_types: ["card"],
+        });
+
+        res.send({
+          clientSecret: paymentIntent.client_secret,
+        });
+    
+    });
+
+    // save payment data
+
+    app.post("/save-payment", async (req, res) => {
+      const paymentData = req.body;
+        const result = await paymentsCollection.insertOne(paymentData);
+        res.send({
+          message: "Payment saved successfully",
+          id: result.insertedId,
+        });
+    });
+
+    // get find data payment already exist
+
+    app.get("/charity-request-status", async (req, res) => {
+      const email = req.query.email;
+      const result = await paymentsCollection.findOne({email:email});
+      res.send(result)
+    });
 
 
 
