@@ -35,6 +35,16 @@ async function run() {
     // user data save api
     app.post("/user", async (req, res) => {
       const userData = req.body;
+      const query = { email: userData.email }
+
+      const findUser = await userCollation.findOne(query);
+      if (findUser) {
+        const userUpdata = await userCollation.updateOne(query, { $set: { last_login: new Date().toISOString() } });
+        res.send(userUpdata)
+        return 
+      }
+      
+
       const result = await userCollation.insertOne(userData);
       res.send(result);
     });
