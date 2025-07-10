@@ -31,6 +31,7 @@ async function run() {
     const db = client.db("foodDonationDb");
     const userCollation = db.collection("users");
     const paymentsCollection = db.collection("payments")
+    const donationsCollection = db.collection("donations")
 
     // user collation api =================================
 
@@ -112,7 +113,16 @@ async function run() {
       res.send(result)
     
     });
+ 
+    // ==============================================
 
+    // add donation 
+
+    app.post('/add-donation', async (req, res) => {
+      const donationData = req.body;
+      const result = await donationsCollection.insertOne(donationData);
+      res.send(result)
+    })
 
 
 
