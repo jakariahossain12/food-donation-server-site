@@ -51,7 +51,20 @@ async function run() {
       res.send(result);
     });
 
+    //  updata user role and status
+    
+    app.patch("/updata-user-role", async (req, res) => {
+      const updateData = req.body;
+      const query = { email: updateData.email };
+      if (updateData.newStatus === 'Approved') {
+        const roleUpdate = await userCollation.updateOne(query, { $set: { role: updateData.role } });
+        res.send(roleUpdate)
+      }
 
+      const result = await paymentsCollection.updateOne(query, { $set: { status: updateData.newStatus } });
+      res.send(result)
+
+    })
 
 
     // payment intent =================
@@ -86,8 +99,18 @@ async function run() {
 
     app.get("/charity-request-status", async (req, res) => {
       const email = req.query.email;
-      const result = await paymentsCollection.findOne({email:email});
+      const query = {};
+      if (email) {
+        query.email = email;
+        const result = await paymentsCollection.findOne(query);
+        res.send(result);
+        return
+      }
+      
+      const result = await paymentsCollection.find().toArray();
+      console.log("array",result);
       res.send(result)
+    
     });
 
 
