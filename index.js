@@ -7,8 +7,17 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+// firebase admin
+var admin = require("firebase-admin");
 
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+var serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT);
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+
+const { MongoClient, ServerApiVersion, ObjectId, Admin } = require("mongodb");
 const { default: Stripe } = require("stripe");
 const uri = process.env.MONGO_DB_URL;
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
@@ -51,6 +60,34 @@ async function run() {
       const result = await userCollation.insertOne(userData);
       res.send(result);
     });
+
+    // get all user
+
+    app.get('/user', async (req, res) => {
+      const result = await userCollation.find().toArray();
+      res.send(result)
+    })
+
+    // updata user role by admin
+
+    app.patch("/user", async (req, res) => {
+      const updateData = req.body;
+      console.log(updateData);
+      const result = await userCollation.updateOne({ _id: new ObjectId(updateData.id) }, { $set: { role: updateData.value } });
+      res.send(result)
+    });
+
+
+    // user delete
+
+    app.delete("/user", async (req, res) => {
+      const id = req.query.id;
+      const result = await userCollation.deleteOne({_id:new ObjectId(id)})
+      res.send(result);
+    });
+
+
+
 
     //  updata user role and status
     
@@ -160,6 +197,20 @@ async function run() {
     });
 
 
+
+    // firebase user delete
+
+    app.delete("/delete-user/:uid", async (req, res) => {
+      try {
+        const uid = req.params.uid;
+        console.log(uid);
+        await admin.auth().deleteUser(uid);
+        res.status(200).json({ message: "User deleted successfully" });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to delete user" });
+      }
+    });
 
 
 
