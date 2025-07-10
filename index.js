@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const { default: Stripe } = require("stripe");
 const uri = process.env.MONGO_DB_URL;
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
@@ -124,8 +124,40 @@ async function run() {
       res.send(result)
     })
 
+    //  get all my donation
+    
+    app.get("/my-donation", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      console.log(query);
+      const result = await donationsCollection.find(query).toArray();
+      res.send(result);
+    });
 
+    // delete my donation
 
+    app.delete("/delete-donation", async (req, res) => {
+      const id = req.query.id;
+      const result = await donationsCollection.deleteOne({_id:new ObjectId(id)});
+      res.send(result)
+    });
+// get one donation
+    app.get("/donation", async (req, res) => {
+      const id = req.query.id;
+      const result = await donationsCollection.findOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
+
+    // update donation
+
+    app.put("/update-donation/:id", async (req, res) => {
+      const donationData = req.body;
+      const id = req.params.id;
+      const result = await donationsCollection.updateOne({_id:new ObjectId(id)},{$set:donationData});
+      res.send(result);
+    });
 
 
 
