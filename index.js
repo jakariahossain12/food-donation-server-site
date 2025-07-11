@@ -130,7 +130,13 @@ async function run() {
       res.send(result);
     });
 
+    // this not admin all verify donation get
 
+    app.get("/all-verify-donations", async (req, res) => {
+    const query = { status: "Verified" };
+    const result = await donationsCollection.find(query).toArray();
+    res.send(result);
+  });
 
 //  =========================================
 
