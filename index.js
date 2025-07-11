@@ -38,6 +38,7 @@ async function run() {
     const donationsCollection = db.collection("donations");
     const favoritesCollection = db.collection("favorites");
     const donationRequestsCollection = db.collection("requests");
+    const donationReviewCollection = db.collection("review");
 
     // user collation api =================================
 
@@ -272,13 +273,19 @@ async function run() {
 
     app.post("/donation-review", async (req, res) => {
       const review = req.body;
-      const { donationId } = review;
+      const result = await donationReviewCollection.insertOne(review)
+      res.send(result);
+    });
 
-      const result = await donationsCollection.updateOne(
-        { _id: new ObjectId(donationId) },
-        { $push: { reviews: review } }
-      );
+    // get review in donation
 
+    app.get("/review", async (req, res) => {
+      const donationId = req.query.id;
+      const result = await donationReviewCollection
+        .find({
+          donationId,
+        })
+        .toArray();
       res.send(result);
     });
 
