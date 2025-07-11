@@ -61,7 +61,11 @@ async function run() {
       res.send(result);
     });
 
-    // get all user
+
+    // admin api ===============================================
+
+
+    // get all user for admin
 
     app.get('/user', async (req, res) => {
       const result = await userCollation.find().toArray();
@@ -78,7 +82,7 @@ async function run() {
     });
 
 
-    // user delete
+    // user delete admin
 
     app.delete("/user", async (req, res) => {
       const id = req.query.id;
@@ -89,7 +93,7 @@ async function run() {
 
 
 
-    //  updata user role and status
+    //  updata user role and status admin
     
     app.patch("/updata-user-role", async (req, res) => {
       const updateData = req.body;
@@ -104,6 +108,31 @@ async function run() {
 
     })
 
+    // get all donation for admin
+
+     app.get("/all-donations", async (req, res) => {
+         const result = await donationsCollection.find().toArray();
+         res.send(result);
+     });
+
+
+
+
+    // donation verify by admin
+
+    app.patch("/update-donation-status/:id", async (req, res) => {
+      const { id } = req.params;
+      const { status } = req.body;
+      const result = await donationsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status: status } }
+      );
+      res.send(result);
+    });
+
+
+
+//  =========================================
 
     // payment intent =================
 
@@ -195,6 +224,9 @@ async function run() {
       const result = await donationsCollection.updateOne({_id:new ObjectId(id)},{$set:donationData});
       res.send(result);
     });
+
+
+
 
 
 
