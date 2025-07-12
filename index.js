@@ -16,7 +16,6 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-
 const { MongoClient, ServerApiVersion, ObjectId, Admin } = require("mongodb");
 const { default: Stripe } = require("stripe");
 const uri = process.env.MONGO_DB_URL;
@@ -332,6 +331,51 @@ async function run() {
       const query = email ? { restaurantEmail: email } : {};
       const result = await donationRequestsCollection.find(query).toArray();
       res.send(result);
+    });
+
+    app.patch("/donation-requests/:id", async (req, res) => {
+      const id = req.params.id;
+      const { status } = req.body;
+      const query = {
+        _id: new ObjectId(id),
+      };
+
+      // 1. Get the accepted request
+      const request = await donationRequestsCollection.findOne(query);
+
+      if (!request) {
+        return res.status(404).send({ message: "Request not found" });
+      }
+
+      if (status === "Accepted") {
+        const updateDog = {
+          $set: {
+            status,
+            pickup_status: "pickup",
+          },
+        };
+
+        // 2. Update the selected request status
+        await donationRequestsCollection.updateOne(query, updateDog);
+      } else {
+        // 2. Update the selected request status
+        await donationRequestsCollection.updateOne(query, { $set: { status } });
+      }
+
+      // 3. If accepted, reject others for same donation
+      if (status === "Accepted") {
+        await donationRequestsCollection.updateMany(
+          {
+            donationId: request.donationId,
+            _id: { $ne: new ObjectId(id) },
+          },
+          {
+            $set: { status: "Rejected" },
+          }
+        );
+      }
+
+      res.send({ success: true });
     });
 
     // add review in donation
