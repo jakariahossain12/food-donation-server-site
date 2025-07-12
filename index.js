@@ -237,7 +237,7 @@ async function run() {
 
       // Check if already saved
       const exists = await favoritesCollection.findOne({
-        donationId,
+        donationId: new ObjectId(donationId),
         userEmail,
       });
       if (exists) {
@@ -246,6 +246,63 @@ async function run() {
 
       const result = await favoritesCollection.insertOne({
         ...req.body,
+        donationId: new ObjectId(donationId),
+      });
+      res.send(result);
+    });
+
+    // get favorites donation
+
+    app.get("/favorites", async (req, res) => {
+      const email = req.query.email;
+
+      const query = { userEmail: email };
+      console.log(query);
+
+      const fov = await favoritesCollection.findOne(query);
+      console.log(fov);
+
+      const result = await favoritesCollection
+        .aggregate([
+          {
+            $match: query,
+          },
+          {
+            $lookup: {
+              from: "donations",
+              localField: "donationId",
+              foreignField: "_id",
+              as: "donationInfo",
+            },
+          },
+          {
+            $unwind: "$donationInfo",
+          },
+          {
+            $project: {
+              _id: 1,
+              donationId: "$donationInfo._id",
+              title: "$donationInfo.title",
+              image: "$donationInfo.image",
+              name: "$donationInfo.name",
+              location: "$donationInfo.location",
+              status: "$donationInfo.status",
+              quantity: "$donationInfo.quantity",
+            },
+          },
+        ])
+        .toArray();
+
+      console.log(result);
+
+      res.send(result);
+    });
+
+    // DELETE /favorites/:id
+    app.delete("/favorites/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await favoritesCollection.deleteOne({
+        _id: new ObjectId(id),
       });
       res.send(result);
     });
@@ -269,11 +326,19 @@ async function run() {
       res.send(result);
     });
 
+    // GET /donation-requests
+    app.get("/donation-requests", async (req, res) => {
+      const email = req.query.email; // optional filter by restaurant email
+      const query = email ? { restaurantEmail: email } : {};
+      const result = await donationRequestsCollection.find(query).toArray();
+      res.send(result);
+    });
+
     // add review in donation
 
     app.post("/donation-review", async (req, res) => {
       const review = req.body;
-      const result = await donationReviewCollection.insertOne(review)
+      const result = await donationReviewCollection.insertOne(review);
       res.send(result);
     });
 
