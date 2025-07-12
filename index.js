@@ -325,7 +325,7 @@ async function run() {
       res.send(result);
     });
 
-    // GET /donation-requests
+    // GET /donation-requests for restaurant
     app.get("/donation-requests", async (req, res) => {
       const email = req.query.email; // optional filter by restaurant email
       const query = email ? { restaurantEmail: email } : {};
@@ -333,6 +333,15 @@ async function run() {
       res.send(result);
     });
 
+    // GET /donation-requests for my-requests charity
+    app.get("/my-requests", async (req, res) => {
+      const email = req.query.email; // optional filter by restaurant email
+      const query = { charityEmail: email };
+      const result = await donationRequestsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // donation-requests update
     app.patch("/donation-requests/:id", async (req, res) => {
       const id = req.params.id;
       const { status } = req.body;
@@ -351,7 +360,7 @@ async function run() {
         const updateDog = {
           $set: {
             status,
-            pickup_status: "pickup",
+            pickup_status: "Assigned",
           },
         };
 
