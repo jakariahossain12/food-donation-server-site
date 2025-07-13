@@ -328,7 +328,7 @@ async function run() {
     // GET /donation-requests for restaurant
     app.get("/donation-requests", async (req, res) => {
       const email = req.query.email; // optional filter by restaurant email
-      const query = email ? { restaurantEmail: email } : {};
+      const query = { restaurantEmail: email };
       const result = await donationRequestsCollection.find(query).toArray();
       res.send(result);
     });
@@ -387,8 +387,7 @@ async function run() {
       res.send({ success: true });
     });
 
-
-    // donation-requests delete 
+    // donation-requests delete
     app.delete("/donation-requests/:id", async (req, res) => {
       const id = req.params.id;
       const query = {
@@ -396,66 +395,158 @@ async function run() {
       };
 
       const result = await donationRequestsCollection.deleteOne(query);
-      res.send(result)
+      res.send(result);
+    });
+
+    // GET all Accepted donation request for a charity =======================
+
+    app.get("/donation-request/pickups", async (req, res) => {
+      const email = req.query.email;
+
+      const query = {
+        charityEmail: email,
+        status: "Accepted",
+      };
+
+      console.log("pickup query", query);
+
+      // Check if any document matches
+      const fov = await donationRequestsCollection.findOne(query);
+      console.log("sample match:", fov);
+
+      const result = await donationRequestsCollection
+        .aggregate([
+          { $match: query },
+          {
+            // Convert donationId string to ObjectId
+            $addFields: {
+              donationObjectId: { $toObjectId: "$donationId" },
+            },
+          },
+          {
+            $lookup: {
+              from: "donations",
+              localField: "donationObjectId",
+              foreignField: "_id",
+              as: "donationInfo",
+            },
+          },
+          { $unwind: "$donationInfo" },
+          {
+            $project: {
+              _id: 1,
+              donationTitle: 1,
+              restaurantName: 1,
+              pickupTime: 1,
+              status: 1,
+              location: "$donationInfo.location",
+              type: "$donationInfo.type",
+              quantity: "$donationInfo.quantity",
+            },
+          },
+        ])
+        .toArray();
+
+      console.log("pickup result", result);
+      res.send(result);
+    });
+
+    //  donation requests status updata also donation status
+
+    app.patch("/donation-request/pickup/:id", async (req, res) => {
+      const id = req.params.id;
+
+      try {
+        const filter = { _id: new ObjectId(id) };
+        const requestsDonation = await donationRequestsCollection.findOne(
+          filter
+        );
+        const donationId = requestsDonation.donationId;
+        const query = { _id: new ObjectId(donationId) };
+        const updateDoc = {
+          $set: {
+            status: "PickedUp",
+            pickedUpAt: new Date().toISOString(), // Optional: timestamp for logging
+          },
+        };
+
+        const donationUpdata = await donationsCollection.updateOne(
+          query,
+          updateDoc
+        );
+        const result = await donationRequestsCollection.updateOne(
+          filter,
+          updateDoc
+        );
+
+        if (result.modifiedCount > 0) {
+          res.send({ success: true, message: "Pickup confirmed." });
+        } else {
+          res.status(404).send({
+            success: false,
+            message: "Request not found or already updated.",
+          });
+        }
+      } catch (error) {
+        console.error("Error confirming pickup:", error);
+        res.status(500).send({
+          success: false,
+          message: "Server error while confirming pickup.",
+        });
+      }
+    });
+
+    // get all pickups donation
+
+    app.get("/donation-request/received",async (req, res) => {
+      
+      const email = req.query.email;
+      const result = await donationRequestsCollection
+        .aggregate([
+          {
+            $match: {
+              charityEmail: email,
+              status: "PickedUp",
+            },
+          },
+          {
+            $addFields: {
+              donationObjectId: { $toObjectId: "$donationId" },
+            },
+          },
+          {
+            $lookup: {
+              from: "donations",
+              localField: "donationObjectId",
+              foreignField: "_id",
+              as: "donationInfo",
+            },
+          },
+          {
+            $unwind: "$donationInfo",
+          },
+          {
+            $project: {
+              _id: 1,
+              donationTitle: "$donationInfo.title",
+              restaurantName: "$donationInfo.name",
+              type: "$donationInfo.type",
+              restaurantEmail: "$restaurantEmail",
+              quantity: "$donationInfo.quantity",
+              pickedUpAt: "1", // Optional: ensure you update `updatedAt` when status changes
+            },
+          },
+        ])
+        .toArray();
 
 
-    })
+       res.send(result);
+    });
 
 
 
-    // GET all pickups for a charity =======================
-   
 
-   app.get("/donation-request/pickups", async (req, res) => {
-     const email = req.query.email;
 
-     const query = {
-       charityEmail: email,
-       status: "Accepted",
-     };
-
-     console.log("pickup query", query);
-
-     // Check if any document matches
-     const fov = await donationRequestsCollection.findOne(query);
-     console.log("sample match:", fov);
-
-     const result = await donationRequestsCollection
-       .aggregate([
-         { $match: query },
-         {
-           // Convert donationId string to ObjectId
-           $addFields: {
-             donationObjectId: { $toObjectId: "$donationId" },
-           },
-         },
-         {
-           $lookup: {
-             from: "donations",
-             localField: "donationObjectId",
-             foreignField: "_id",
-             as: "donationInfo",
-           },
-         },
-         { $unwind: "$donationInfo" },
-         {
-           $project: {
-             _id: 1,
-             donationTitle: 1,
-             restaurantName: 1,
-             pickupTime: 1,
-             status: 1,
-             location: "$donationInfo.location",
-             type: "$donationInfo.type",
-             quantity: "$donationInfo.quantity",
-           },
-         },
-       ])
-       .toArray();
-
-     console.log("pickup result", result);
-     res.send(result);
-   });
 
     // add review in donation
 
