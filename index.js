@@ -137,7 +137,7 @@ async function run() {
 
     app.get("/donation-requests", async (req, res) => {
       const result = await donationRequestsCollection.find().toArray();
-      res.send(result)
+      res.send(result);
     });
 
     // delete donation requests for admin
@@ -149,6 +149,13 @@ async function run() {
       res.send(result);
     });
 
+    // GET all verified donations for admin
+    app.get("/donations/verified", async (req, res) => {
+      const result = await donationsCollection
+        .find({ status: "Verified" })
+        .toArray();
+      res.send(result);
+    });
 
     //  =========================================
 
@@ -515,8 +522,7 @@ async function run() {
 
     // get all pickups donation
 
-    app.get("/donation-request/received",async (req, res) => {
-      
+    app.get("/donation-request/received", async (req, res) => {
       const email = req.query.email;
       const result = await donationRequestsCollection
         .aggregate([
@@ -556,14 +562,8 @@ async function run() {
         ])
         .toArray();
 
-
-       res.send(result);
+      res.send(result);
     });
-
-
-
-
-
 
     // add review in donation
 
