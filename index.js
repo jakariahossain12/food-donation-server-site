@@ -387,6 +387,76 @@ async function run() {
       res.send({ success: true });
     });
 
+
+    // donation-requests delete 
+    app.delete("/donation-requests/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = {
+        _id: new ObjectId(id),
+      };
+
+      const result = await donationRequestsCollection.deleteOne(query);
+      res.send(result)
+
+
+    })
+
+
+
+    // GET all pickups for a charity =======================
+   
+
+   app.get("/donation-request/pickups", async (req, res) => {
+     const email = req.query.email;
+
+     const query = {
+       charityEmail: email,
+       status: "Accepted",
+     };
+
+     console.log("pickup query", query);
+
+     // Check if any document matches
+     const fov = await donationRequestsCollection.findOne(query);
+     console.log("sample match:", fov);
+
+     const result = await donationRequestsCollection
+       .aggregate([
+         { $match: query },
+         {
+           // Convert donationId string to ObjectId
+           $addFields: {
+             donationObjectId: { $toObjectId: "$donationId" },
+           },
+         },
+         {
+           $lookup: {
+             from: "donations",
+             localField: "donationObjectId",
+             foreignField: "_id",
+             as: "donationInfo",
+           },
+         },
+         { $unwind: "$donationInfo" },
+         {
+           $project: {
+             _id: 1,
+             donationTitle: 1,
+             restaurantName: 1,
+             pickupTime: 1,
+             status: 1,
+             location: "$donationInfo.location",
+             type: "$donationInfo.type",
+             quantity: "$donationInfo.quantity",
+           },
+         },
+       ])
+       .toArray();
+
+     console.log("pickup result", result);
+     res.send(result);
+   });
+
     // add review in donation
 
     app.post("/donation-review", async (req, res) => {
