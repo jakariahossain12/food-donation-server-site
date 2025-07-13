@@ -133,6 +133,23 @@ async function run() {
       res.send(result);
     });
 
+    // get all donation requests for admin
+
+    app.get("/donation-requests", async (req, res) => {
+      const result = await donationRequestsCollection.find().toArray();
+      res.send(result)
+    });
+
+    // delete donation requests for admin
+    app.delete("/donation-request/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await donationRequestsCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
+
+
     //  =========================================
 
     // payment intent =================
