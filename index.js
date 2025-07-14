@@ -655,6 +655,28 @@ async function run() {
       res.send(result);
     });
 
+// get user reviews =====
+    app.get("/reviews/:id", async (req, res) => {
+      const restaurantEmail = req.params.id;
+      const result = await donationReviewCollection
+        .find({
+          restaurantEmail,
+        })
+        .toArray();
+      res.send(result);
+    });
+// delete my reviews
+    app.delete("/reviews/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await donationReviewCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
+
+
+
+
     // firebase user delete
 
     app.delete("/delete-user/:uid", async (req, res) => {
