@@ -233,15 +233,15 @@ async function run() {
 
     // this not admin all verify donation get for user
 
-   app.get("/all-verify-donations", async (req, res) => {
-     const limit = parseInt(req.query.limit) || 2;
-     const result = await donationsCollection
-       .find({ status: "Verified" })
-       .limit(limit)
-       .toArray();
-     res.send(result);
-   });
+    app.get("/all-verify-donations", async (req, res) => {
+      const limit = parseInt(req.query.limit) || 2;
+      const result = await donationsCollection
+        .find({ status: "Verified" })
 
+        .sort({ create: -1 })
+        .toArray();
+      res.send(result);
+    });
 
     //  get all my donation
 
@@ -281,6 +281,27 @@ async function run() {
         { $set: donationData }
       );
       res.send(result);
+    });
+
+    // featured donations ====================================
+
+    // GET only featured donations (minimum 0, max 4)
+    app.get("/featured-donations", async (req, res) => {
+      try {
+        const limit =  4;
+
+        const featured = await donationsCollection
+          .find({ status: "Verified" })
+          .sort({ create: -1 })
+          .limit(limit)
+          .toArray();
+
+        res.send(featured); // sends 0-4 donations
+      } catch (error) {
+        res
+          .status(500)
+          .send({ message: "Failed to fetch featured donations", error });
+      }
     });
 
     //favorites donation save =====================
