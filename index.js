@@ -288,7 +288,7 @@ async function run() {
     // GET only featured donations (minimum 0, max 4)
     app.get("/featured-donations", async (req, res) => {
       try {
-        const limit =  4;
+        const limit = 4;
 
         const featured = await donationsCollection
           .find({ status: "Verified" })
@@ -301,6 +301,25 @@ async function run() {
         res
           .status(500)
           .send({ message: "Failed to fetch featured donations", error });
+      }
+    });
+
+    // Get latest charity requests (limit default to 3)
+    app.get("/charity-requests/latest", async (req, res) => {
+      
+
+      try {
+        const result = await paymentsCollection
+          .find({}) // Optional: add filter like { status: 'Pending' }
+          .sort({ created: -1 })
+          .limit(3)
+          .toArray();
+
+        res.send(result);
+      } catch (error) {
+        res
+          .status(500)
+          .send({ message: "Failed to fetch latest charity requests", error });
       }
     });
 
