@@ -29,6 +29,21 @@ const client = new MongoClient(uri, {
   },
 });
 
+// token verity
+
+const verifyToken = async (req, res, next) => {
+  const token = req.headers.authorization.split(" ")[1];
+  console.log(token);
+  if (!token) return res.status(401).send({ message: "UnAuthorized" });
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    res.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(403).send({ message: "invalid token" });
+  }
+};
+
 async function run() {
   try {
     const db = client.db("foodDonationDb");
@@ -59,11 +74,20 @@ async function run() {
       res.send(result);
     });
 
+    // user for user
+    app.get("/user", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+
+      const result = await userCollation.findOne(query);
+      res.send(result);
+    });
+
     // admin api ===============================================
 
     // get all user for admin
 
-    app.get("/user", async (req, res) => {
+    app.get("/all-user", async (req, res) => {
       const result = await userCollation.find().toArray();
       res.send(result);
     });
@@ -109,7 +133,9 @@ async function run() {
     // get all donation for admin
 
     app.get("/all-donations", async (req, res) => {
+      console.log(req.decoded);
       const result = await donationsCollection.find().toArray();
+
       res.send(result);
     });
 
@@ -122,14 +148,6 @@ async function run() {
         { _id: new ObjectId(id) },
         { $set: { status: status } }
       );
-      res.send(result);
-    });
-
-    // this not admin all verify donation get
-
-    app.get("/all-verify-donations", async (req, res) => {
-      const query = { status: "Verified" };
-      const result = await donationsCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -212,6 +230,18 @@ async function run() {
       const result = await donationsCollection.insertOne(donationData);
       res.send(result);
     });
+
+    // this not admin all verify donation get for user
+
+   app.get("/all-verify-donations", async (req, res) => {
+     const limit = parseInt(req.query.limit) || 2;
+     const result = await donationsCollection
+       .find({ status: "Verified" })
+       .limit(limit)
+       .toArray();
+     res.send(result);
+   });
+
 
     //  get all my donation
 
