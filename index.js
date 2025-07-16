@@ -7,14 +7,30 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+const jwt = require("jsonwebtoken");
 // firebase admin
 var admin = require("firebase-admin");
 
-var serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT);
+// const decodedKey = Buffer.from(process.env.FB_SERVICE_KEY, "base64").toString(
+//   "utf8"
+// );
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
+try {
+  const keyJsonString = Buffer.from(
+    process.env.FB_SERVICE_KEY,
+    "base64"
+  ).toString("utf8");
+
+  const serviceAccount = JSON.parse(keyJsonString);
+
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+
+  // console.log("✅ Firebase Admin Initialized");
+} catch (error) {
+  console.error("❌ Failed to parse Firebase Admin key:", error.message);
+}
 
 const { MongoClient, ServerApiVersion, ObjectId, Admin } = require("mongodb");
 const { default: Stripe } = require("stripe");
@@ -31,16 +47,18 @@ const client = new MongoClient(uri, {
 
 // token verity
 
-const verifyToken = async (req, res, next) => {
-  const token = req.headers.authorization.split(" ")[1];
-  console.log(token);
-  if (!token) return res.status(401).send({ message: "UnAuthorized" });
+const verifyToken =async (req, res, next) => {
+  
+  const token = await req.headers.authorization?.split(" ")[1]; // Bearer <token>
+  if (!token) return res.status(401).json({ message: "Unauthorized" });
+
   try {
-    const decoded = await admin.auth().verifyIdToken(token);
-    res.user = decoded;
+    const decoded = await jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // attach user to request
+
     next();
-  } catch (error) {
-    return res.status(403).send({ message: "invalid token" });
+  } catch (err) {
+    return res.status(403).json({ message: "Forbidden" });
   }
 };
 
@@ -54,7 +72,61 @@ async function run() {
     const donationRequestsCollection = db.collection("requests");
     const donationReviewCollection = db.collection("review");
 
+
+     // JWT TOKEN CREATE =============
+        app.post('/jwt-token', async (req, res) => {
+          const email = req.body
+          
+          const token = jwt.sign(email, process.env.JWT_SECRET, { expiresIn: '4h' })
+          
+          res.send({ token :token});
+    
+        })
+
     // user collation api =================================
+
+    app.get("/firebase-check", async (req, res) => {
+      try {
+        // Try accessing Firebase project info
+        const projectInfo = await admin.app().options.projectId;
+
+        res.status(200).send({
+          success: true,
+          message: "Firebase Admin SDK connected ✅",
+          projectId: projectInfo,
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: "Firebase Admin connection failed ❌",
+          error: error.message,
+        });
+      }
+    });
+
+    // ad verify
+
+    const adminVerify = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email };
+      const user = await userCollation.findOne(query);
+      if (!user || user.role !== "admin") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+
+    // charity verify
+
+    const charityVerify = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email };
+      const user = await userCollation.findOne(query);
+      if (!user || user.role !== "charity") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
 
     // user data save api
     app.post("/user", async (req, res) => {
@@ -75,7 +147,7 @@ async function run() {
     });
 
     // user for user
-    app.get("/user", async (req, res) => {
+    app.get("/user", verifyToken, async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
 
@@ -87,16 +159,15 @@ async function run() {
 
     // get all user for admin
 
-    app.get("/all-user", async (req, res) => {
+    app.get("/all-user", verifyToken, async (req, res) => {
       const result = await userCollation.find().toArray();
       res.send(result);
     });
 
     // updata user role by admin
 
-    app.patch("/user", async (req, res) => {
+    app.patch("/user", verifyToken, async (req, res) => {
       const updateData = req.body;
-      console.log(updateData);
       const result = await userCollation.updateOne(
         { _id: new ObjectId(updateData.id) },
         { $set: { role: updateData.value } }
@@ -106,7 +177,7 @@ async function run() {
 
     // user delete admin
 
-    app.delete("/user", async (req, res) => {
+    app.delete("/user", verifyToken, async (req, res) => {
       const id = req.query.id;
       const result = await userCollation.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
@@ -114,7 +185,7 @@ async function run() {
 
     //  updata user role and status admin
 
-    app.patch("/updata-user-role", async (req, res) => {
+    app.patch("/updata-user-role", verifyToken, async (req, res) => {
       const updateData = req.body;
       const query = { email: updateData.email };
       if (updateData.newStatus === "Approved") {
@@ -132,8 +203,7 @@ async function run() {
 
     // get all donation for admin
 
-    app.get("/all-donations", async (req, res) => {
-      console.log(req.decoded);
+    app.get("/all-donations", verifyToken, async (req, res) => {
       const result = await donationsCollection.find().toArray();
 
       res.send(result);
@@ -141,7 +211,7 @@ async function run() {
 
     // donation verify by admin
 
-    app.patch("/update-donation-status/:id", async (req, res) => {
+    app.patch("/update-donation-status/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const { status } = req.body;
       const result = await donationsCollection.updateOne(
@@ -153,13 +223,13 @@ async function run() {
 
     // get all donation requests for admin
 
-    app.get("/donation-requests", async (req, res) => {
+    app.get("/donation-requests", verifyToken, async (req, res) => {
       const result = await donationRequestsCollection.find().toArray();
       res.send(result);
     });
 
     // delete donation requests for admin
-    app.delete("/donation-request/:id", async (req, res) => {
+    app.delete("/donation-request/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const result = await donationRequestsCollection.deleteOne({
         _id: new ObjectId(id),
@@ -168,7 +238,7 @@ async function run() {
     });
 
     // GET all verified donations for admin
-    app.get("/donations/verified", async (req, res) => {
+    app.get("/donations/verified", verifyToken, async (req, res) => {
       const result = await donationsCollection
         .find({ status: "Verified" })
         .toArray();
@@ -179,9 +249,8 @@ async function run() {
 
     // payment intent =================
 
-    app.post("/create-payment-intent", async (req, res) => {
+    app.post("/create-payment-intent", verifyToken, async (req, res) => {
       const { amount } = req.body;
-      console.log(amount);
       const paymentIntent = await stripe.paymentIntents.create({
         amount, // amount in cents: $10 = 1000
         currency: "usd",
@@ -195,7 +264,7 @@ async function run() {
 
     // save payment data
 
-    app.post("/save-payment", async (req, res) => {
+    app.post("/save-payment", verifyToken, async (req, res) => {
       const paymentData = req.body;
       const result = await paymentsCollection.insertOne(paymentData);
       res.send({
@@ -206,7 +275,7 @@ async function run() {
 
     // get find data payment already exist
 
-    app.get("/charity-request-status", async (req, res) => {
+    app.get("/charity-request-status", verifyToken, async (req, res) => {
       const email = req.query.email;
       const query = {};
       if (email) {
@@ -217,7 +286,6 @@ async function run() {
       }
 
       const result = await paymentsCollection.find().toArray();
-      console.log("array", result);
       res.send(result);
     });
 
@@ -225,7 +293,7 @@ async function run() {
 
     // add donation
 
-    app.post("/add-donation", async (req, res) => {
+    app.post("/add-donation", verifyToken, async (req, res) => {
       const donationData = req.body;
       const result = await donationsCollection.insertOne(donationData);
       res.send(result);
@@ -233,7 +301,7 @@ async function run() {
 
     // this not admin all verify donation get for user
 
-    app.get("/all-verify-donations", async (req, res) => {
+    app.get("/all-verify-donations", verifyToken, async (req, res) => {
       const limit = parseInt(req.query.limit) || 2;
       const result = await donationsCollection
         .find({ status: "Verified" })
@@ -245,17 +313,16 @@ async function run() {
 
     //  get all my donation
 
-    app.get("/my-donation", async (req, res) => {
+    app.get("/my-donation", verifyToken, async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
-      console.log(query);
       const result = await donationsCollection.find(query).toArray();
       res.send(result);
     });
 
     // delete my donation
 
-    app.delete("/delete-donation", async (req, res) => {
+    app.delete("/delete-donation", verifyToken, async (req, res) => {
       const id = req.query.id;
       const result = await donationsCollection.deleteOne({
         _id: new ObjectId(id),
@@ -263,7 +330,7 @@ async function run() {
       res.send(result);
     });
     // get one donation
-    app.get("/donation", async (req, res) => {
+    app.get("/donation", verifyToken, async (req, res) => {
       const id = req.query.id;
       const result = await donationsCollection.findOne({
         _id: new ObjectId(id),
@@ -273,7 +340,7 @@ async function run() {
 
     // update donation
 
-    app.put("/update-donation/:id", async (req, res) => {
+    app.put("/update-donation/:id", verifyToken, async (req, res) => {
       const donationData = req.body;
       const id = req.params.id;
       const result = await donationsCollection.updateOne(
@@ -306,8 +373,6 @@ async function run() {
 
     // Get latest charity requests (limit default to 3)
     app.get("/charity-requests/latest", async (req, res) => {
-      
-
       try {
         const result = await paymentsCollection
           .find({}) // Optional: add filter like { status: 'Pending' }
@@ -325,7 +390,7 @@ async function run() {
 
     //favorites donation save =====================
 
-    app.post("/favorites", async (req, res) => {
+    app.post("/favorites", verifyToken, async (req, res) => {
       const { donationId, userEmail } = req.body;
 
       // Check if already saved
@@ -346,14 +411,12 @@ async function run() {
 
     // get favorites donation
 
-    app.get("/favorites", async (req, res) => {
+    app.get("/favorites", verifyToken, async (req, res) => {
       const email = req.query.email;
 
       const query = { userEmail: email };
-      console.log(query);
 
       const fov = await favoritesCollection.findOne(query);
-      console.log(fov);
 
       const result = await favoritesCollection
         .aggregate([
@@ -386,13 +449,12 @@ async function run() {
         ])
         .toArray();
 
-      console.log(result);
 
       res.send(result);
     });
 
     // DELETE /favorites/:id
-    app.delete("/favorites/:id", async (req, res) => {
+    app.delete("/favorites/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const result = await favoritesCollection.deleteOne({
         _id: new ObjectId(id),
@@ -402,7 +464,7 @@ async function run() {
 
     // donation request send
 
-    app.post("/donation-request", async (req, res) => {
+    app.post("/donation-request", verifyToken, async (req, res) => {
       const { charityEmail, donationId } = req.body;
       // Check if already request
       const exists = await donationRequestsCollection.findOne({
@@ -420,7 +482,7 @@ async function run() {
     });
 
     // GET /donation-requests for restaurant
-    app.get("/donation-requests", async (req, res) => {
+    app.get("/donation-requests", verifyToken, async (req, res) => {
       const email = req.query.email; // optional filter by restaurant email
       const query = { restaurantEmail: email };
       const result = await donationRequestsCollection.find(query).toArray();
@@ -428,7 +490,7 @@ async function run() {
     });
 
     // GET /donation-requests for my-requests charity
-    app.get("/my-requests", async (req, res) => {
+    app.get("/my-requests", verifyToken, async (req, res) => {
       const email = req.query.email; // optional filter by restaurant email
       const query = { charityEmail: email };
       const result = await donationRequestsCollection.find(query).toArray();
@@ -436,7 +498,7 @@ async function run() {
     });
 
     // donation-requests update
-    app.patch("/donation-requests/:id", async (req, res) => {
+    app.patch("/donation-requests/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const { status } = req.body;
       const query = {
@@ -482,7 +544,7 @@ async function run() {
     });
 
     // donation-requests delete
-    app.delete("/donation-requests/:id", async (req, res) => {
+    app.delete("/donation-requests/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = {
         _id: new ObjectId(id),
@@ -494,7 +556,7 @@ async function run() {
 
     // GET all Accepted donation request for a charity =======================
 
-    app.get("/donation-request/pickups", async (req, res) => {
+    app.get("/donation-request/pickups", verifyToken, async (req, res) => {
       const email = req.query.email;
 
       const query = {
@@ -502,11 +564,9 @@ async function run() {
         status: "Accepted",
       };
 
-      console.log("pickup query", query);
 
       // Check if any document matches
       const fov = await donationRequestsCollection.findOne(query);
-      console.log("sample match:", fov);
 
       const result = await donationRequestsCollection
         .aggregate([
@@ -541,13 +601,12 @@ async function run() {
         ])
         .toArray();
 
-      console.log("pickup result", result);
       res.send(result);
     });
 
     //  donation requests status updata also donation status
 
-    app.patch("/donation-request/pickup/:id", async (req, res) => {
+    app.patch("/donation-request/pickup/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
 
       try {
@@ -592,7 +651,7 @@ async function run() {
 
     // get all pickups donation
 
-    app.get("/donation-request/received", async (req, res) => {
+    app.get("/donation-request/received", verifyToken, async (req, res) => {
       const email = req.query.email;
       const result = await donationRequestsCollection
         .aggregate([
@@ -637,7 +696,7 @@ async function run() {
 
     // add review in donation
 
-    app.post("/donation-review", async (req, res) => {
+    app.post("/donation-review", verifyToken, async (req, res) => {
       const review = req.body;
       const result = await donationReviewCollection.insertOne(review);
       res.send(result);
@@ -645,7 +704,7 @@ async function run() {
 
     // get review in donation
 
-    app.get("/review", async (req, res) => {
+    app.get("/review", verifyToken, async (req, res) => {
       const donationId = req.query.id;
       const result = await donationReviewCollection
         .find({
@@ -655,8 +714,8 @@ async function run() {
       res.send(result);
     });
 
-// get user reviews =====
-    app.get("/reviews/:id", async (req, res) => {
+    // get user reviews =====
+    app.get("/reviews/:id", verifyToken, async (req, res) => {
       const restaurantEmail = req.params.id;
       const result = await donationReviewCollection
         .find({
@@ -665,8 +724,8 @@ async function run() {
         .toArray();
       res.send(result);
     });
-// delete my reviews
-    app.delete("/reviews/:id", async (req, res) => {
+    // delete my reviews
+    app.delete("/reviews/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const result = await donationReviewCollection.deleteOne({
         _id: new ObjectId(id),
@@ -674,15 +733,11 @@ async function run() {
       res.send(result);
     });
 
-
-
-
     // firebase user delete
 
-    app.delete("/delete-user/:uid", async (req, res) => {
+    app.delete("/delete-user/:uid", verifyToken, async (req, res) => {
       try {
         const uid = req.params.uid;
-        console.log(uid);
         await admin.auth().deleteUser(uid);
         res.status(200).json({ message: "User deleted successfully" });
       } catch (err) {
@@ -692,12 +747,12 @@ async function run() {
     });
 
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
