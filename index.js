@@ -390,15 +390,24 @@ async function run() {
 
     // featured donations ====================================
 
+    app.patch("/donations/feature/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await donationsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { featured: true } }
+      );
+      res.send(result);
+    });
+
+
     // GET only featured donations (minimum 0, max 4)
     app.get("/featured-donations", async (req, res) => {
       try {
-        const limit = 4;
+        
 
         const featured = await donationsCollection
-          .find({ status: "Verified" })
+          .find({ featured: true })
           .sort({ create: -1 })
-          .limit(limit)
           .toArray();
 
         res.send(featured); // sends 0-4 donations
@@ -408,6 +417,10 @@ async function run() {
           .send({ message: "Failed to fetch featured donations", error });
       }
     });
+
+
+
+
 
     // Get latest charity requests (limit default to 3)
     app.get("/charity-requests/latest", async (req, res) => {
