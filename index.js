@@ -160,7 +160,12 @@ async function run() {
     // get all user for admin
 
     app.get("/all-user", verifyToken, async (req, res) => {
-      const result = await userCollation.find().toArray();
+      const result = await userCollation
+        .find()
+        .sort({
+          create_at: -1,
+        })
+        .toArray();
       res.send(result);
     });
 
