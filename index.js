@@ -72,16 +72,16 @@ async function run() {
     const donationRequestsCollection = db.collection("requests");
     const donationReviewCollection = db.collection("review");
 
+    // JWT TOKEN CREATE =============
+    app.post("/jwt-token", async (req, res) => {
+      const email = req.body;
 
-     // JWT TOKEN CREATE =============
-        app.post('/jwt-token', async (req, res) => {
-          const email = req.body
-          
-          const token = jwt.sign(email, process.env.JWT_SECRET, { expiresIn: '4h' })
-          
-          res.send({ token :token});
-    
-        })
+      const token = jwt.sign(email, process.env.JWT_SECRET, {
+        expiresIn: "4h",
+      });
+
+      res.send({ token: token });
+    });
 
     // user collation api =================================
 
@@ -324,7 +324,6 @@ async function run() {
       }
     });
 
-
     //  get all my donation
 
     app.get("/my-donation", verifyToken, async (req, res) => {
@@ -361,6 +360,31 @@ async function run() {
         { _id: new ObjectId(id) },
         { $set: donationData }
       );
+      res.send(result);
+    });
+
+    // Donation Statistics
+    app.get("/restaurant/donation-stats", verifyToken, async (req, res) => {
+      const email = req.user.email;
+
+      const pipeline = [
+        { $match: { email, status: "Verified" } },
+        {
+          $group: {
+            _id: "$type",
+            quantity: { $sum: { $toInt: "$quantity" } },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            type: "$_id",
+            quantity: 1,
+          },
+        },
+      ];
+
+      const result = await donationsCollection.aggregate(pipeline).toArray();
       res.send(result);
     });
 
@@ -462,7 +486,6 @@ async function run() {
           },
         ])
         .toArray();
-
 
       res.send(result);
     });
@@ -577,7 +600,6 @@ async function run() {
         charityEmail: email,
         status: "Accepted",
       };
-
 
       // Check if any document matches
       const fov = await donationRequestsCollection.findOne(query);
