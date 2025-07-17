@@ -302,14 +302,28 @@ async function run() {
     // this not admin all verify donation get for user
 
     app.get("/all-verify-donations", verifyToken, async (req, res) => {
-      const limit = parseInt(req.query.limit) || 2;
-      const result = await donationsCollection
-        .find({ status: "Verified" })
+      const search = req.query.search || "";
 
-        .sort({ create: -1 })
-        .toArray();
-      res.send(result);
+      const filter = {
+        status: "Verified",
+        ...(search && {
+          location: { $regex: search, $options: "i" }, // case-insensitive location search
+        }),
+      };
+
+      try {
+        const result = await donationsCollection
+          .find(filter)
+          .sort({ create: -1 }) // newest first
+          .toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.error("Failed to fetch verified donations:", error);
+        res.status(500).send({ error: "Server error" });
+      }
     });
+
 
     //  get all my donation
 
