@@ -104,10 +104,11 @@ async function run() {
       }
     });
 
-    // ad verify
+    // admin verify
 
     const adminVerify = async (req, res, next) => {
-      const email = req.decoded.email;
+      const email = req?.user?.email;
+      
       const query = { email };
       const user = await userCollation.findOne(query);
       if (!user || user.role !== "admin") {
@@ -119,10 +120,22 @@ async function run() {
     // charity verify
 
     const charityVerify = async (req, res, next) => {
-      const email = req.decoded.email;
+      const email = req?.user.email;
       const query = { email };
       const user = await userCollation.findOne(query);
       if (!user || user.role !== "charity") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+
+    // charity verify
+
+    const restaurantVerify = async (req, res, next) => {
+      const email = req?.user.email;
+      const query = { email };
+      const user = await userCollation.findOne(query);
+      if (!user || user.role !== "restaurant") {
         return res.status(403).send({ message: "forbidden access" });
       }
       next();
@@ -159,7 +172,9 @@ async function run() {
 
     // get all user for admin
 
-    app.get("/all-user", verifyToken, async (req, res) => {
+    app.get("/all-user", verifyToken,adminVerify, async (req, res) => {
+      
+      
       const result = await userCollation
         .find()
         .sort({
@@ -171,7 +186,7 @@ async function run() {
 
     // updata user role by admin
 
-    app.patch("/user", verifyToken, async (req, res) => {
+    app.patch("/user", verifyToken,adminVerify, async (req, res) => {
       const updateData = req.body;
       const result = await userCollation.updateOne(
         { _id: new ObjectId(updateData.id) },
@@ -182,15 +197,15 @@ async function run() {
 
     // user delete admin
 
-    app.delete("/user", verifyToken, async (req, res) => {
+    app.delete("/user", verifyToken,adminVerify, async (req, res) => {
       const id = req.query.id;
       const result = await userCollation.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
 
-    //  updata user role and status admin
+    //  updata user role and status by admin  
 
-    app.patch("/updata-user-role", verifyToken, async (req, res) => {
+    app.patch("/updata-user-role", verifyToken,adminVerify, async (req, res) => {
       const updateData = req.body;
       const query = { email: updateData.email };
       if (updateData.newStatus === "Approved") {
@@ -216,7 +231,7 @@ async function run() {
 
     // donation verify by admin
 
-    app.patch("/update-donation-status/:id", verifyToken, async (req, res) => {
+    app.patch("/update-donation-status/:id", verifyToken,adminVerify, async (req, res) => {
       const { id } = req.params;
       const { status } = req.body;
       const result = await donationsCollection.updateOne(
@@ -234,7 +249,7 @@ async function run() {
     });
 
     // delete donation requests for admin
-    app.delete("/donation-request/:id", verifyToken, async (req, res) => {
+    app.delete("/donation-request/:id", verifyToken,adminVerify, async (req, res) => {
       const id = req.params.id;
       const result = await donationRequestsCollection.deleteOne({
         _id: new ObjectId(id),
@@ -331,7 +346,7 @@ async function run() {
 
     //  get all my donation
 
-    app.get("/my-donation", verifyToken, async (req, res) => {
+    app.get("/my-donation", verifyToken,restaurantVerify, async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
       const result = await donationsCollection.find(query).toArray();
@@ -340,7 +355,7 @@ async function run() {
 
     // delete my donation
 
-    app.delete("/delete-donation", verifyToken, async (req, res) => {
+    app.delete("/delete-donation", verifyToken,restaurantVerify, async (req, res) => {
       const id = req.query.id;
       const result = await donationsCollection.deleteOne({
         _id: new ObjectId(id),
@@ -358,7 +373,7 @@ async function run() {
 
     // update donation
 
-    app.put("/update-donation/:id", verifyToken, async (req, res) => {
+    app.put("/update-donation/:id", verifyToken,restaurantVerify, async (req, res) => {
       const donationData = req.body;
       const id = req.params.id;
       const result = await donationsCollection.updateOne(
@@ -395,7 +410,7 @@ async function run() {
 
     // featured donations ====================================
 
-    app.patch("/donations/feature/:id", async (req, res) => {
+    app.patch("/donations/feature/:id",verifyToken,adminVerify, async (req, res) => {
       const id = req.params.id;
       const result = await donationsCollection.updateOne(
         { _id: new ObjectId(id) },
@@ -404,12 +419,9 @@ async function run() {
       res.send(result);
     });
 
-
     // GET only featured donations (minimum 0, max 4)
     app.get("/featured-donations", async (req, res) => {
       try {
-        
-
         const featured = await donationsCollection
           .find({ featured: true })
           .sort({ create: -1 })
@@ -422,10 +434,6 @@ async function run() {
           .send({ message: "Failed to fetch featured donations", error });
       }
     });
-
-
-
-
 
     // Get latest charity requests (limit default to 3)
     app.get("/charity-requests/latest", async (req, res) => {
@@ -519,7 +527,7 @@ async function run() {
 
     // donation request send
 
-    app.post("/donation-request", verifyToken, async (req, res) => {
+    app.post("/donation-request", verifyToken,charityVerify, async (req, res) => {
       const { charityEmail, donationId } = req.body;
       // Check if already request
       const exists = await donationRequestsCollection.findOne({
@@ -540,7 +548,10 @@ async function run() {
     app.get("/donation-requests", verifyToken, async (req, res) => {
       const email = req.query.email; // optional filter by restaurant email
       const query = { restaurantEmail: email };
-      const result = await donationRequestsCollection.find(query).toArray();
+      const result = await donationRequestsCollection
+        .find(query)
+        .sort({ requestedAt: -1 })
+        .toArray();
       res.send(result);
     });
 
@@ -553,7 +564,7 @@ async function run() {
     });
 
     // donation-requests update
-    app.patch("/donation-requests/:id", verifyToken, async (req, res) => {
+    app.patch("/donation-requests/:id", verifyToken,restaurantVerify, async (req, res) => {
       const id = req.params.id;
       const { status } = req.body;
       const query = {
@@ -789,7 +800,7 @@ async function run() {
 
     // firebase user delete
 
-    app.delete("/delete-user/:uid", verifyToken, async (req, res) => {
+    app.delete("/delete-user/:uid", verifyToken,adminVerify, async (req, res) => {
       try {
         const uid = req.params.uid;
         await admin.auth().deleteUser(uid);
