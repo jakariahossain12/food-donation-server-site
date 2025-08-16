@@ -160,7 +160,7 @@ async function run() {
     });
 
     // user for user
-    app.get("/user", verifyToken, async (req, res) => {
+    app.get("/user", async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
 
@@ -321,7 +321,7 @@ async function run() {
 
     // this not admin all verify donation get for user
 
-    app.get("/all-verify-donations", verifyToken, async (req, res) => {
+    app.get("/all-verify-donations", async (req, res) => {
       const search = req.query.search || "";
 
       const filter = {
@@ -363,7 +363,7 @@ async function run() {
       res.send(result);
     });
     // get one donation
-    app.get("/donation", verifyToken, async (req, res) => {
+    app.get("/donation", async (req, res) => {
       const id = req.query.id;
       const result = await donationsCollection.findOne({
         _id: new ObjectId(id),
@@ -769,7 +769,7 @@ async function run() {
 
     // get review in donation
 
-    app.get("/review", verifyToken, async (req, res) => {
+    app.get("/review", async (req, res) => {
       const donationId = req.query.id;
       const result = await donationReviewCollection
         .find({
