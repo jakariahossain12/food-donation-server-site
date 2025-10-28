@@ -1,4 +1,7 @@
+const mongoose = require("mongoose");
 const User = require("../models/user");
+const Payment = require("../models/payment");
+
 // user data get by user email
 async function handelGetUserByEmail(req, res) {
   try {
@@ -47,7 +50,87 @@ async function handelSaveUserData(req, res) {
 }
 
 
+// Get all users (admin only)
+async function getAllUsers(req, res) {
+  try {
+    const users = await User.find().sort({ createdAt: -1 });
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ error: "Server error", details: error.message });
+  }
+}
+
+// Update user role by ID
+async function updateUserRole(req, res) {
+  try {
+    const { id, value } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid user ID" });
+    }
+
+    const result = await User.updateOne(
+      { _id: new mongoose.Types.ObjectId(id) },
+      { $set: { role: value } }
+    );
+
+    res.status(200).json({ message: "User role updated", result });
+  } catch (error) {
+    res.status(500).json({ error: "Server error", details: error.message });
+  }
+}
+
+// Delete user by ID
+async function deleteUser(req, res) {
+  try {
+    const { id } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid user ID" });
+    }
+
+    const result = await User.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Server error", details: error.message });
+  }
+}
+
+// Update user role and payment status
+async function updateUserRoleAndStatus(req, res) {
+  try {
+    const { email, role, newStatus } = req.body;
+
+    if (!email || !newStatus) {
+      return res.status(400).json({ error: "Email and newStatus are required" });
+    }
+
+    const query = { email };
+
+    if (newStatus === "Approved" && role) {
+      await User.updateOne(query, { $set: { role } });
+    }
+
+    const result = await Payment.updateOne(query, { $set: { status: newStatus } });
+
+    res.status(200).json({ message: "User status updated", result });
+  } catch (error) {
+    res.status(500).json({ error: "Server error", details: error.message });
+  }
+}
+
+
+
 module.exports={
     handelGetUserByEmail,
-    handelSaveUserData
+    handelSaveUserData,
+    getAllUsers,
+    updateUserRole,
+    deleteUser,
+    updateUserRoleAndStatus,
 }
