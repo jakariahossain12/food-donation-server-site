@@ -6,11 +6,9 @@ const {handelDeleteFavoriteDataById,handelGetFavoriteDataByEmail,handelSaveFavor
 
 
   //favorites donation save ===================== after add verify token function
-    
         router.post("/",handelSaveFavoriteData);
     
         // get favorites donation
-    
         router.get("/",handelGetFavoriteDataByEmail);
     
         // DELETE /favorites/:id

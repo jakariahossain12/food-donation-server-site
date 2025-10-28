@@ -26,7 +26,7 @@ async function handelSaveFavoriteData(req, res) {
     });
 
     const saved = await newFavorite.save();
-    res.status(201).json({ message: "Favorite saved", favorite: saved });
+    res.status(201).json({ message: "Favorite saved", id: saved._id });
   } catch (error) {
     res.status(500).json({ error: "Server error", details: error.message });
   }
