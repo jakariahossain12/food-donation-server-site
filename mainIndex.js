@@ -48,6 +48,7 @@ connectMongoDb(process.env.MONGO_DB_URL_M)
 const userRouter = require("./routes/user")
 const favoritesRouter = require("./routes/favorites")
 const paymentRouter = require("./routes/payment");
+const reviewRouter = require("./routes/review");
 
 
 
@@ -60,6 +61,7 @@ async function run() {
     app.use("/favorites",favoritesRouter);
     // after i want add /payment
     app.use("/", paymentRouter);
+    app.use("/reviews", reviewRouter);
 
 
 
