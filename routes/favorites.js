@@ -3,16 +3,16 @@ const express = require("express");
 const router = express.Router();
 
 const {handelDeleteFavoriteDataById,handelGetFavoriteDataByEmail,handelSaveFavoriteData} = require("../controllers/favorites");
+const {verifyToken} = require("../middlewares/index");
 
 
-  //favorites donation save ===================== after add verify token function
-        router.post("/",handelSaveFavoriteData);
+  //favorites donation save ===================== 
+        router.post("/",verifyToken,handelSaveFavoriteData);
     
         // get favorites donation
-        router.get("/",handelGetFavoriteDataByEmail);
+        router.get("/",verifyToken,handelGetFavoriteDataByEmail);
     
         // DELETE /favorites/:id
-        router.delete("/:id",handelDeleteFavoriteDataById);
-
+        router.delete("/:id",verifyToken,handelDeleteFavoriteDataById);
 
         module.exports = router;

@@ -2,9 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const {connectMongoDb} = require("./connection")
-// router ======================================
-const userRouter = require("./routes/user")
-const favoritesRouter = require("./routes/favorites")
+
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -46,28 +44,22 @@ connectMongoDb(process.env.MONGO_DB_URL_M)
 .catch((err)=>console.log("mongo",err))
 
 
-// token verity
+// router ======================================
+const userRouter = require("./routes/user")
+const favoritesRouter = require("./routes/favorites")
+const paymentRouter = require("./routes/payment");
 
-const verifyToken =async (req, res, next) => {
-  
-  const token = await req.headers.authorization?.split(" ")[1]; // Bearer <token>
-  if (!token) return res.status(401).json({ message: "Unauthorized" });
 
-  try {
-    const decoded = await jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // attach user to request
 
-    next();
-  } catch (err) {
-    return res.status(403).json({ message: "Forbidden" });
-  }
-};
+
 
 async function run() {
   try {
     
     app.use("/user",userRouter);
     app.use("/favorites",favoritesRouter);
+    // after i want add /payment
+    app.use("/", paymentRouter);
 
 
 
