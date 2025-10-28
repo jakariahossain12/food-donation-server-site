@@ -2,7 +2,9 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const {connectMongoDb} = require("./connection")
+// router ======================================
 const userRouter = require("./routes/user")
+const favoritesRouter = require("./routes/favorites")
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -65,6 +67,7 @@ async function run() {
   try {
     
     app.use("/user",userRouter);
+    app.use("/favorites",favoritesRouter);
 
 
 
