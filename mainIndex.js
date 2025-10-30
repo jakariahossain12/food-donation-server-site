@@ -50,6 +50,8 @@ const favoritesRouter = require("./routes/favorites")
 const paymentRouter = require("./routes/payment");
 const reviewRouter = require("./routes/review");
 const requestRouter = require("./routes/request");
+const donationRouter = require("./routes/donation");
+const userStatsRouter = require("./routes/userStats");
 
 
 
@@ -66,6 +68,8 @@ async function run() {
     app.use("/reviews", reviewRouter);
     app.use("/donation-request", requestRouter);
     app.use("/donation-requests", requestRouter);
+    app.use("/donation", donationRouter);
+    app.use("/user-stats", userStatsRouter);
 
 
 
@@ -74,7 +78,7 @@ async function run() {
 
 
     
-        // // User Overview Stats
+        // User Overview Stats
         // app.get("/user-stats/:email", async (req, res) => {
         //   const email = req.params.email;
         //   console.log(email);
@@ -196,168 +200,168 @@ async function run() {
     
         //! get all donation for admin
     
-        app.get("/all-donations", verifyToken, async (req, res) => {
-          const result = await donationsCollection.find().toArray();
+        // app.get("/all-donations", verifyToken, async (req, res) => {
+        //   const result = await donationsCollection.find().toArray();
     
-          res.send(result);
-        });
+        //   res.send(result);
+        // });
     
-        // donation verify by admin
+        // // donation verify by admin
     
-        app.patch("/update-donation-status/:id",verifyToken,adminVerify,
-          async (req, res) => {
-            const { id } = req.params;
-            const { status } = req.body;
-            const result = await donationsCollection.updateOne(
-              { _id: new ObjectId(id) },
-              { $set: { status: status } }
-            );
-            res.send(result);
-          }
-        );
+        // app.patch("/update-donation-status/:id",verifyToken,adminVerify,
+        //   async (req, res) => {
+        //     const { id } = req.params;
+        //     const { status } = req.body;
+        //     const result = await donationsCollection.updateOne(
+        //       { _id: new ObjectId(id) },
+        //       { $set: { status: status } }
+        //     );
+        //     res.send(result);
+        //   }
+        // );
     
 
     
-        // GET all verified donations for admin
-        app.get("/donations/verified", verifyToken, async (req, res) => {
-          const result = await donationsCollection
-            .find({ status: "Verified" })
-            .toArray();
-          res.send(result);
-        });
+        // // GET all verified donations for admin
+        // app.get("/donations/verified", verifyToken, async (req, res) => {
+        //   const result = await donationsCollection
+        //     .find({ status: "Verified" })
+        //     .toArray();
+        //   res.send(result);
+        // });
     
     
-        // //! ==============================================
+        // // //! ==============================================
     
-        // add donation
+        // // add donation
     
-        app.post("/add-donation", verifyToken, async (req, res) => {
-          const donationData = req.body;
-          const result = await donationsCollection.insertOne(donationData);
-          res.send(result);
-        });
+        // app.post("/add-donation", verifyToken, async (req, res) => {
+        //   const donationData = req.body;
+        //   const result = await donationsCollection.insertOne(donationData);
+        //   res.send(result);
+        // });
     
-        // this not admin all verify donation get for user
+        // // this not admin all verify donation get for user
     
-        app.get("/all-verify-donations", async (req, res) => {
-          const search = req.query.search || "";
+        // app.get("/all-verify-donations", async (req, res) => {
+        //   const search = req.query.search || "";
     
-          const filter = {
-            status: "Verified",
-            ...(search && {
-              location: { $regex: search, $options: "i" }, // case-insensitive location search
-            }),
-          };
+        //   const filter = {
+        //     status: "Verified",
+        //     ...(search && {
+        //       location: { $regex: search, $options: "i" }, // case-insensitive location search
+        //     }),
+        //   };
     
-          try {
-            const result = await donationsCollection
-              .find(filter)
-              .sort({ create: -1 }) // newest first
-              .toArray();
+        //   try {
+        //     const result = await donationsCollection
+        //       .find(filter)
+        //       .sort({ create: -1 }) // newest first
+        //       .toArray();
     
-            res.send(result);
-          } catch (error) {
-            console.error("Failed to fetch verified donations:", error);
-            res.status(500).send({ error: "Server error" });
-          }
-        });
+        //     res.send(result);
+        //   } catch (error) {
+        //     console.error("Failed to fetch verified donations:", error);
+        //     res.status(500).send({ error: "Server error" });
+        //   }
+        // });
     
-        //  get all my donation
+        // //  get all my donation
     
-        app.get("/my-donation", verifyToken, restaurantVerify, async (req, res) => {
-          const email = req.query.email;
-          const query = { email: email };
-          const result = await donationsCollection.find(query).toArray();
-          res.send(result);
-        });
+        // app.get("/my-donation", verifyToken, restaurantVerify, async (req, res) => {
+        //   const email = req.query.email;
+        //   const query = { email: email };
+        //   const result = await donationsCollection.find(query).toArray();
+        //   res.send(result);
+        // });
     
-        // delete my donation
+        // // delete my donation
     
-        app.delete("/delete-donation",verifyToken,restaurantVerify,
-          async (req, res) => {
-            const id = req.query.id;
-            const result = await donationsCollection.deleteOne({
-              _id: new ObjectId(id),
-            });
-            res.send(result);
-          }
-        );
-        // get one donation
-        app.get("/donation", async (req, res) => {
-          const id = req.query.id;
-          const result = await donationsCollection.findOne({
-            _id: new ObjectId(id),
-          });
-          res.send(result);
-        });
+        // app.delete("/delete-donation",verifyToken,restaurantVerify,
+        //   async (req, res) => {
+        //     const id = req.query.id;
+        //     const result = await donationsCollection.deleteOne({
+        //       _id: new ObjectId(id),
+        //     });
+        //     res.send(result);
+        //   }
+        // );
+        // // get one donation
+        // app.get("/donation", async (req, res) => {
+        //   const id = req.query.id;
+        //   const result = await donationsCollection.findOne({
+        //     _id: new ObjectId(id),
+        //   });
+        //   res.send(result);
+        // });
     
-        // update donation
+        // // update donation
     
-        app.put("/update-donation/:id",verifyToken,restaurantVerify,
-          async (req, res) => {
-            const donationData = req.body;
-            const id = req.params.id;
-            const result = await donationsCollection.updateOne(
-              { _id: new ObjectId(id) },
-              { $set: donationData }
-            );
-            res.send(result);
-          }
-        );
+        // app.put("/update-donation/:id",verifyToken,restaurantVerify,
+        //   async (req, res) => {
+        //     const donationData = req.body;
+        //     const id = req.params.id;
+        //     const result = await donationsCollection.updateOne(
+        //       { _id: new ObjectId(id) },
+        //       { $set: donationData }
+        //     );
+        //     res.send(result);
+        //   }
+        // );
     
-        // Donation Statistics eita alada
-        app.get("/restaurant/donation-stats", verifyToken, async (req, res) => {
-          const email = req.user.email;
+        // // Donation Statistics eita alada
+        // app.get("/restaurant/donation-stats", verifyToken, async (req, res) => {
+        //   const email = req.user.email;
     
-          const pipeline = [
-            { $match: { email, status: "Verified" } },
-            {
-              $group: {
-                _id: "$type",
-                quantity: { $sum: { $toInt: "$quantity" } },
-              },
-            },
-            {
-              $project: {
-                _id: 0,
-                type: "$_id",
-                quantity: 1,
-              },
-            },
-          ];
+        //   const pipeline = [
+        //     { $match: { email, status: "Verified" } },
+        //     {
+        //       $group: {
+        //         _id: "$type",
+        //         quantity: { $sum: { $toInt: "$quantity" } },
+        //       },
+        //     },
+        //     {
+        //       $project: {
+        //         _id: 0,
+        //         type: "$_id",
+        //         quantity: 1,
+        //       },
+        //     },
+        //   ];
     
-          const result = await donationsCollection.aggregate(pipeline).toArray();
-          res.send(result);
-        });
+        //   const result = await donationsCollection.aggregate(pipeline).toArray();
+        //   res.send(result);
+        // });
     
-        // featured donations ====================================
+        // // featured donations ====================================
     
-        app.patch("/donations/feature/:id",verifyToken,adminVerify,
-          async (req, res) => {
-            const id = req.params.id;
-            const result = await donationsCollection.updateOne(
-              { _id: new ObjectId(id) },
-              { $set: { featured: true } }
-            );
-            res.send(result);
-          }
-        );
+        // app.patch("/donations/feature/:id",verifyToken,adminVerify,
+        //   async (req, res) => {
+        //     const id = req.params.id;
+        //     const result = await donationsCollection.updateOne(
+        //       { _id: new ObjectId(id) },
+        //       { $set: { featured: true } }
+        //     );
+        //     res.send(result);
+        //   }
+        // );
     
-        // GET only featured donations (minimum 0, max 4)
-        app.get("/featured-donations", async (req, res) => {
-          try {
-            const featured = await donationsCollection
-              .find({ featured: true })
-              .sort({ create: -1 })
-              .toArray();
+        // // GET only featured donations (minimum 0, max 4)
+        // app.get("/featured-donations", async (req, res) => {
+        //   try {
+        //     const featured = await donationsCollection
+        //       .find({ featured: true })
+        //       .sort({ create: -1 })
+        //       .toArray();
     
-            res.send(featured); // sends 0-4 donations
-          } catch (error) {
-            res
-              .status(500)
-              .send({ message: "Failed to fetch featured donations", error });
-          }
-        });
+        //     res.send(featured); // sends 0-4 donations
+        //   } catch (error) {
+        //     res
+        //       .status(500)
+        //       .send({ message: "Failed to fetch featured donations", error });
+        //   }
+        // });
     
        
        
