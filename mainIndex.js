@@ -9,35 +9,15 @@ const PORT = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
-const jwt = require("jsonwebtoken");
-// firebase admin
-var admin = require("firebase-admin");
+
 
 // const decodedKey = Buffer.from(process.env.FB_SERVICE_KEY, "base64").toString(
 //   "utf8"
 // );
 
-try {
-  const keyJsonString = Buffer.from(
-    process.env.FB_SERVICE_KEY,
-    "base64"
-  ).toString("utf8");
 
-  const serviceAccount = JSON.parse(keyJsonString);
 
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
 
-  // console.log("✅ Firebase Admin Initialized");
-} catch (error) {
-  console.error("❌ Failed to parse Firebase Admin key:", error.message);
-}
-
-const { MongoClient, ServerApiVersion, ObjectId, Admin } = require("mongodb");
-const { default: Stripe } = require("stripe");
- 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 connectMongoDb(process.env.MONGO_DB_URL_M)
 .then(()=>console.log("mongodb connect"))
@@ -52,6 +32,8 @@ const reviewRouter = require("./routes/review");
 const requestRouter = require("./routes/request");
 const donationRouter = require("./routes/donation");
 const userStatsRouter = require("./routes/userStats");
+const authRouter = require("./routes/auth");
+const firebaseUserRouter = require("./routes/firebaseUser");
 
 
 
@@ -70,6 +52,8 @@ async function run() {
     app.use("/donation-requests", requestRouter);
     app.use("/donation", donationRouter);
     app.use("/user-stats", userStatsRouter);
+    app.use("/auth", authRouter);
+    app.use("/firebase-user", firebaseUserRouter);
 
 
 
