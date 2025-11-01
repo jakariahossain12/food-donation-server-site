@@ -58,8 +58,31 @@ async function getCharityRequestStatus(req, res) {
   }
 }
 
+
+
+// Get latest charity requests (default limit: 3)
+async function getLatestCharityRequests(req, res) {
+  try {
+    const limit = parseInt(req.query.limit) || 3;
+
+    const result = await Payment.find()
+      .sort({ created: -1 }) // Optional: add filter like { status: 'Pending' }
+      .limit(limit);
+
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch latest charity requests",
+      error: error.message,
+    });
+  }
+}
+
+
+
 module.exports = {
   createPaymentIntent,
   savePayment,
   getCharityRequestStatus,
+  getLatestCharityRequests
 };

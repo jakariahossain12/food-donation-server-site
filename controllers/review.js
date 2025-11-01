@@ -13,7 +13,7 @@ async function addDonationReview(req, res) {
     const newReview = new Review(review);
     const saved = await newReview.save();
 
-    res.status(201).json({ message: "Review added", id: saved._id });
+    res.status(201).json(saved);
   } catch (error) {
     res.status(500).json({ error: "Server error", details: error.message });
   }
@@ -62,7 +62,7 @@ async function deleteReviewById(req, res) {
       return res.status(404).json({ message: "Review not found" });
     }
 
-    res.status(200).json({ message: "Review deleted successfully" });
+    res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ error: "Server error", details: error.message });
   }

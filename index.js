@@ -187,6 +187,7 @@ async function run() {
       }
     });
 
+    //! all middlewares move complete
     // admin verify
 
     const adminVerify = async (req, res, next) => {
@@ -224,7 +225,7 @@ async function run() {
       next();
     };
 
-    // user data save api  complete move
+    //! user data save api   move complete
     app.post("/user", async (req, res) => {
       const userData = req.body;
       const query = { email: userData.email };
@@ -253,7 +254,7 @@ async function run() {
 
     // admin api ===============================================
 
-    // get all user for admin
+    //! get all user for admin  ?? move completed
 
     app.get("/all-user", verifyToken, adminVerify, async (req, res) => {
       const result = await userCollation
@@ -307,7 +308,7 @@ async function run() {
       }
     );
 
-    // get all donation for admin
+    //! get all donation for admin
 
     app.get("/all-donations", verifyToken, async (req, res) => {
       const result = await donationsCollection.find().toArray();
@@ -363,7 +364,7 @@ async function run() {
 
     //  =========================================
 
-    // payment intent =================
+    //! payment intent ================= move complete
 
     app.post("/create-payment-intent", verifyToken, async (req, res) => {
       const { amount } = req.body;
@@ -405,7 +406,7 @@ async function run() {
       res.send(result);
     });
 
-    // ==============================================
+    //! ==============================================
 
     // add donation
 
@@ -474,10 +475,7 @@ async function run() {
 
     // update donation
 
-    app.put(
-      "/update-donation/:id",
-      verifyToken,
-      restaurantVerify,
+    app.put("/update-donation/:id",verifyToken,restaurantVerify,
       async (req, res) => {
         const donationData = req.body;
         const id = req.params.id;
@@ -516,10 +514,7 @@ async function run() {
 
     // featured donations ====================================
 
-    app.patch(
-      "/donations/feature/:id",
-      verifyToken,
-      adminVerify,
+    app.patch("/donations/feature/:id",verifyToken,adminVerify,
       async (req, res) => {
         const id = req.params.id;
         const result = await donationsCollection.updateOne(
@@ -563,7 +558,7 @@ async function run() {
       }
     });
 
-    //favorites donation save ===================== move complete
+    //!favorites donation save =====================  move complete
 
     app.post("/favorites", verifyToken, async (req, res) => {
       const { donationId, userEmail } = req.body;
@@ -680,11 +675,7 @@ async function run() {
     });
 
     // donation-requests update
-    app.patch(
-      "/donation-requests/:id",
-      verifyToken,
-      restaurantVerify,
-      async (req, res) => {
+    app.patch("/donation-requests/:id",verifyToken,restaurantVerify,async (req, res) => {
         const id = req.params.id;
         const { status } = req.body;
         const query = {
@@ -743,7 +734,7 @@ async function run() {
       res.send(result);
     });
 
-    // GET all Accepted donation request for a charity =======================
+    //! GET all Accepted donation request for a charity =======================
 
     app.get("/donation-request/pickups", verifyToken, async (req, res) => {
       const email = req.query.email;
@@ -882,7 +873,7 @@ async function run() {
       res.send(result);
     });
 
-    // add review in donation
+    // add review in donation /// ! move complete
 
     app.post("/donation-review", verifyToken, async (req, res) => {
       const review = req.body;
@@ -923,10 +914,7 @@ async function run() {
 
     // firebase user delete
 
-    app.delete(
-      "/delete-user/:uid",
-      verifyToken,
-      adminVerify,
+    app.delete("/delete-user/:uid",verifyToken,adminVerify,
       async (req, res) => {
         try {
           const uid = req.params.uid;

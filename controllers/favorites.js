@@ -26,7 +26,7 @@ async function handelSaveFavoriteData(req, res) {
     });
 
     const saved = await newFavorite.save();
-    res.status(201).json({ message: "Favorite saved", id: saved._id });
+    res.status(201).json(saved);
   } catch (error) {
     res.status(500).json({ error: "Server error", details: error.message });
   }
@@ -87,7 +87,7 @@ async function handelDeleteFavoriteDataById(req, res) {
       return res.status(404).json({ message: "Favorite not found" });
     }
 
-    res.status(200).json({ message: "Favorite deleted successfully" });
+    res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ error: "Server error", details: error.message });
   }

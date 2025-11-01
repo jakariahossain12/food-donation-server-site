@@ -43,7 +43,11 @@ const donationSchema = new mongoose.Schema({
   upDate: {
     type: Date,
     default: Date.now
+  },
+  featured:{
+    type:Boolean,default:false
   }
+
 });
 
 const Donation = mongoose.model('donation', donationSchema);
