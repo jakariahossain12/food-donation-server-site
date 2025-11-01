@@ -3,6 +3,6 @@ const router = express.Router();
 const { verifyToken, adminVerify } = require("../middlewares/index");
 const { deleteFirebaseUser } = require("../controllers/firebaseUser");
 
-router.delete("/delete/:uid", verifyToken, adminVerify, deleteFirebaseUser);
+router.delete("/delete-user/:uid", verifyToken, adminVerify, deleteFirebaseUser);
 
 module.exports = router;

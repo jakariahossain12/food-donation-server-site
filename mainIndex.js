@@ -46,7 +46,7 @@ async function run() {
     app.use("/user",userRouter);
     app.use("/favorites",favoritesRouter);
     // after i want add /payment
-    app.use("/", paymentRouter);
+    app.use("/payment", paymentRouter);
     app.use("/reviews", reviewRouter);
     app.use("/donation-request", requestRouter);
     app.use("/donation-requests", requestRouter);

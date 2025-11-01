@@ -28,7 +28,7 @@ router.post("/add", verifyToken, addDonation);
 router.get("/public", getPublicVerifiedDonations);
 router.get("/mine", verifyToken, restaurantVerify, getMyDonations);
 router.delete("/", verifyToken, restaurantVerify, deleteDonation);
-router.get("/one", getOneDonation);
+router.get("/", getOneDonation);
 router.put("/update/:id", verifyToken, restaurantVerify, updateDonation);
 router.get("/stats", verifyToken, getDonationStats);
 router.patch("/feature/:id", verifyToken, adminVerify, featureDonation);

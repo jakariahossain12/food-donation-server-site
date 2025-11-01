@@ -103,12 +103,12 @@ async function deleteOwnRequest(req, res) {
       return res.status(404).json({ message: "Request not found" });
     }
 
-    if (request.charityEmail !== userEmail && request.restaurantEmail !== userEmail) {
-      return res.status(403).json({ message: "You are not authorized to delete this request" });
-    }
+    // if (request.charityEmail !== userEmail && request.restaurantEmail !== userEmail) {
+    //   return res.status(403).json({ message: "You are not authorized to delete this request" });
+    // }
 
     const result = await DonationRequest.deleteOne({ _id: request._id });
-    res.status(200).json({ message: "Request deleted", result });
+    res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
