@@ -39,7 +39,7 @@ router.get("/my-requests", verifyToken, charityVerify, getRequestsByCharity);
 router.patch("/:id", verifyToken, restaurantVerify, updateRequestStatus);
 
 // delete own request
-router.delete("/:id", verifyToken, deleteOwnRequest);
+router.delete("/mine/:id", verifyToken, deleteOwnRequest);
 
 // Charity: Confirm pickup
 router.patch("/pickup/:id", verifyToken, charityVerify, confirmPickup);
