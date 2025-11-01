@@ -1,5 +1,5 @@
 {
-  "name": "food-donation-server-site",
+  "name": "donation-server-site",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
