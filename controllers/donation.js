@@ -150,9 +150,12 @@ async function getDonationStats(req, res) {
 async function featureDonation(req, res) {
   try {
     const { id } = req.params;
-    const result = await Donation.updateOne(
-      { _id: new mongoose.Types.ObjectId(id) },
-      { $set: { featured: true } }
+    console.log(id);
+    const result = await Donation.findByIdAndUpdate(
+      id,
+      { $set: { featured: true } },
+      { new: true }
+
     );
     res.status(200).json(result);
   } catch (error) {
