@@ -53,6 +53,10 @@ async function addDonation(req, res) {
 async function getPublicVerifiedDonations(req, res) {
   try {
     const search = req.query.search || "";
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 8;
+    const skip = (page - 1) * limit;
+
     const filter = {
       status: "Verified",
       ...(search && {
@@ -60,8 +64,18 @@ async function getPublicVerifiedDonations(req, res) {
       }),
     };
 
-    const result = await Donation.find(filter).sort({ create: -1 });
-    res.status(200).json(result);
+    const total = await Donation.countDocuments(filter);
+    const result = await Donation.find(filter)
+      .sort({ create: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      donations: result,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
     res.status(500).json({ error: "Server error", details: error.message });
   }
