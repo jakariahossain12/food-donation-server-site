@@ -21,7 +21,7 @@ const {
   getFeaturedDonations,
 } = require("../controllers/donation");
 
-router.get("/all", verifyToken, getAllDonations);
+router.get("/all", verifyToken,adminVerify, getAllDonations);
 router.patch("/status/:id", verifyToken, adminVerify, verifyDonation);
 router.get("/verified", verifyToken, getVerifiedDonations);
 router.post("/add", verifyToken, addDonation);

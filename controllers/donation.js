@@ -4,8 +4,23 @@ const Donation = require("../models/donation");
 // Get all donations (admin)
 async function getAllDonations(req, res) {
   try {
-    const result = await Donation.find();
-    res.status(200).json(result);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const total = await Donation.countDocuments();
+
+    const result = await Donation.find()
+      .sort({ create: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      data: result,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      total,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
